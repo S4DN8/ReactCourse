@@ -22,7 +22,7 @@ class ErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.log(`Error info: ${error} ${errorInfo} `);
+    console.log(`Error: ${error} ${errorInfo} `);
   }
 
   render() {
@@ -61,7 +61,26 @@ class App extends React.Component<AppProps, AppState> {
   }
 
   handleClick() {
-    console.log(`${this.state.searchTerm}`);
+    const url: string = `https://pokeapi.co/api/v2/${this.state.searchTerm}`;
+    fetch(url)
+      .then((response) => response.json())
+      .then((data) => {
+        this.setState({
+          results: data.results,
+        });
+      })
+      .catch((error) => {
+        console.error('Error:', error);
+      });
+  }
+
+  dataPrepare(data: { name: string; url: string }[]) {
+    return data.map((element, i) => (
+      <div key={`item-${i}`} className="result-item">
+        <p className="result-name">{element.name}</p>
+        <p className="result-url">{element.url}</p>
+      </div>
+    ));
   }
 
   render() {
@@ -73,7 +92,7 @@ class App extends React.Component<AppProps, AppState> {
             Search
           </button>
         </section>
-        <section id="main"></section>
+        <section id="main">{this.dataPrepare(this.state.results)}</section>
       </ErrorBoundary>
     );
   }
