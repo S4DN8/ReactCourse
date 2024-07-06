@@ -29,8 +29,73 @@ class ErrorBoundary extends React.Component<
     if (this.state.hasError) {
       return <p id="err-text">Something went wrong. Reload page.</p>;
     }
-
     return this.props.children;
+  }
+}
+
+interface SearchProps {
+  updateResults: (results: { name: string; url: string }[]) => void;
+  handleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleClick: () => void;
+  handleKeyPress: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  searchTerm: string;
+}
+
+class Search extends React.Component<SearchProps> {
+  render() {
+    return (
+      <section id="search">
+        <input
+          id="input-search"
+          onChange={this.props.handleChange}
+          onKeyDown={this.props.handleKeyPress}
+          value={this.props.searchTerm}
+        ></input>
+        <button id="btn-search" onClick={this.props.handleClick}>
+          Search
+        </button>
+      </section>
+    );
+  }
+}
+
+interface ResultsProps {
+  results: { name: string; url: string }[];
+}
+
+class Results extends React.Component<ResultsProps> {
+  render() {
+    return (
+      <section id="main">
+        {this.props.results.map((element, i) => {
+          return (
+            <ErrorBoundary key={i}>
+              <DataCell id={i} name={element.name} url={element.url} />
+            </ErrorBoundary>
+          );
+        })}
+      </section>
+    );
+  }
+}
+
+interface DataCellProps {
+  id: number;
+  name: string;
+  url: string;
+}
+
+class DataCell extends React.Component<DataCellProps> {
+  render() {
+    if (!this.props.name || !this.props.url) {
+      throw new Error('Data not found.');
+    }
+    return (
+      <div key={`item-${this.props.id}`} className="result-item">
+        <p className="result-name">{this.props.name}</p>
+        <p className="result-url">{this.props.url}</p>
+      </div>
+    );
   }
 }
 
@@ -85,11 +150,16 @@ class App extends React.Component<AppProps, AppState> {
     this.handleClick = this.handleClick.bind(this);
     this.handleKeyPress = this.handleKeyPress.bind(this);
     this.throwError = this.throwError.bind(this);
+    this.updateResults = this.updateResults.bind(this);
   }
 
-  // componentDidMount() {
-  //   this.handleClick();
-  // }
+  updateResults(results: { name: string; url: string }[]) {
+    this.setState({ results });
+  }
+
+  componentDidMount() {
+    this.handleClick();
+  }
 
   handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     this.setState({
@@ -120,18 +190,6 @@ class App extends React.Component<AppProps, AppState> {
     }
   }
 
-  dataPrepare(data: { name: string; url: string }[]) {
-    if (!data) {
-      throw new Error('Data not exist.');
-    }
-    return data.map((element, i) => (
-      <div key={`item-${i}`} className="result-item">
-        <p className="result-name">{element.name}</p>
-        <p className="result-url">{element.url}</p>
-      </div>
-    ));
-  }
-
   throwError() {
     this.setState({
       errorSim: true,
@@ -142,20 +200,16 @@ class App extends React.Component<AppProps, AppState> {
     return (
       <>
         <ErrorBoundary>
-          <section id="search">
-            <input
-              id="input-search"
-              onChange={this.handleChange}
-              onKeyDown={this.handleKeyPress}
-              value={this.state.searchTerm}
-            ></input>
-            <button id="btn-search" onClick={this.handleClick}>
-              Search
-            </button>
-          </section>
+          <Search
+            searchTerm={this.state.searchTerm}
+            updateResults={this.updateResults}
+            handleChange={this.handleChange}
+            handleClick={this.handleClick}
+            handleKeyPress={this.handleKeyPress}
+          />
         </ErrorBoundary>
         <ErrorBoundary>
-          <section id="main">{this.dataPrepare(this.state.results)}</section>
+          <Results results={this.state.results} />
         </ErrorBoundary>
         <ErrorBoundary>
           <ErrorButton />
