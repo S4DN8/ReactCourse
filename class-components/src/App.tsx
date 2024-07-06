@@ -1,4 +1,5 @@
 import React from 'react';
+import './App.css';
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
@@ -27,7 +28,7 @@ class ErrorBoundary extends React.Component<
 
   render() {
     if (this.state.hasError) {
-      return <p id="err-text">Something went wrong. Reload page.</p>;
+      return <p className="err-text">Something went wrong. Reload page.</p>;
     }
     return this.props.children;
   }
@@ -69,9 +70,7 @@ class Results extends React.Component<ResultsProps> {
       <section id="main">
         {this.props.results.map((element, i) => {
           return (
-            <ErrorBoundary key={i}>
-              <DataCell id={i} name={element.name} url={element.url} />
-            </ErrorBoundary>
+            <DataCell key={i} id={i} name={element.name} url={element.url} />
           );
         })}
       </section>
