@@ -16,6 +16,7 @@ class ErrorBoundary extends React.Component<
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false };
+    this.handleRetry = this.handleRetry.bind(this);
   }
 
   static getDerivedStateFromError() {
@@ -23,19 +24,27 @@ class ErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.log(`Error: ${error} ${errorInfo} `);
+    console.log(`${error} ${errorInfo} `);
+  }
+
+  handleRetry() {
+    this.setState({ hasError: false });
   }
 
   render() {
     if (this.state.hasError) {
-      return <p className="err-text">Something went wrong. Reload page.</p>;
+      return (
+        <>
+          <p className="err-text">Something went wrong. Reload page.</p>
+          <button onClick={this.handleRetry}>Retry</button>
+        </>
+      );
     }
     return this.props.children;
   }
 }
 
 interface SearchProps {
-  updateResults: (results: { name: string; url: string }[]) => void;
   handleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleClick: () => void;
   handleKeyPress: (e: React.KeyboardEvent<HTMLInputElement>) => void;
@@ -47,6 +56,7 @@ class Search extends React.Component<SearchProps> {
     return (
       <section id="search">
         <input
+          type="text"
           id="input-search"
           onChange={this.props.handleChange}
           onKeyDown={this.props.handleKeyPress}
@@ -66,6 +76,9 @@ interface ResultsProps {
 
 class Results extends React.Component<ResultsProps> {
   render() {
+    if (!this.props.results || this.props.results.length === 0) {
+      return <p>No matches found.</p>;
+    }
     return (
       <section id="main">
         {this.props.results.map((element, i) => {
@@ -122,9 +135,11 @@ class ErrorButton extends React.Component<ErrorBurronsProps, ErrorButtonState> {
       throw new Error("That's ok, just error simulation!");
     }
     return (
-      <button id="btn-error" onClick={this.throwError}>
-        Throw error
-      </button>
+      <section id="bot">
+        <button id="btn-error" onClick={this.throwError}>
+          Throw error
+        </button>
+      </section>
     );
   }
 }
@@ -149,11 +164,6 @@ class App extends React.Component<AppProps, AppState> {
     this.handleClick = this.handleClick.bind(this);
     this.handleKeyPress = this.handleKeyPress.bind(this);
     this.throwError = this.throwError.bind(this);
-    this.updateResults = this.updateResults.bind(this);
-  }
-
-  updateResults(results: { name: string; url: string }[]) {
-    this.setState({ results });
   }
 
   componentDidMount() {
@@ -162,7 +172,7 @@ class App extends React.Component<AppProps, AppState> {
 
   handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     this.setState({
-      searchTerm: e.target.value.replace(/\s/g, `%`),
+      searchTerm: e.target.value,
     });
   }
 
@@ -170,16 +180,20 @@ class App extends React.Component<AppProps, AppState> {
     const { searchTerm } = this.state;
     const url: string = `https://pokeapi.co/api/v2/${this.state.searchTerm}`;
     fetch(url)
-      .then((response) => response.json())
+      .then((response) => {
+        if (!response.ok) {
+          return 'NotFound';
+        }
+        return response.json();
+      })
       .then((data) => {
         this.setState({
           results: data.results,
         });
         localStorage.setItem('searchTerm', searchTerm);
       })
-
       .catch((error) => {
-        console.error('Error:', error);
+        console.error(error);
       });
   }
 
@@ -201,7 +215,6 @@ class App extends React.Component<AppProps, AppState> {
         <ErrorBoundary>
           <Search
             searchTerm={this.state.searchTerm}
-            updateResults={this.updateResults}
             handleChange={this.handleChange}
             handleClick={this.handleClick}
             handleKeyPress={this.handleKeyPress}
